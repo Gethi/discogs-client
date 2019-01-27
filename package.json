@@ -1,0 +1,11 @@
+{
+  "name": "discogs",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "https://github.com/Gethi/discogs-client.git",
+  "author": "Gethi <bigard.antoine@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "disconnect": "^1.2.1"
+  }
+}
