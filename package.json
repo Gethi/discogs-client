@@ -10,6 +10,7 @@
     "fast-xml-parser": "^3.12.12",
     "fs-extra": "^7.0.1",
     "he": "^1.2.0",
+    "omit-deep-lodash": "^1.1.4",
     "saxophone": "^0.5.0",
     "xml-stream": "^0.4.5"
   },

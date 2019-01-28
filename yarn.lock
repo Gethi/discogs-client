@@ -77,6 +77,11 @@ jsonfile@^4.0.0:
   optionalDependencies:
     graceful-fs "^4.1.6"
 
+lodash@~4.17.11:
+  version "4.17.11"
+  resolved "https://registry.yarnpkg.com/lodash/-/lodash-4.17.11.tgz#b39ea6229ef607ecd89e2c8df12536891cac9b8d"
+  integrity sha512-cQKh8igo5QUhZ7lg38DYWAxMvjSAKG0A8wGSVimP07SIUEK2UO+arSRKbRZWtelMtN5V0Hkwh5ryOto/SshYIg==
+
 nan@^2.10.0, nan@^2.11.1:
   version "2.12.1"
   resolved "https://registry.yarnpkg.com/nan/-/nan-2.12.1.tgz#7b1aa193e9aa86057e3c7bbd0ac448e770925552"
@@ -112,6 +117,13 @@ oauth-1.0a@2.x.x:
   version "2.2.5"
   resolved "https://registry.yarnpkg.com/oauth-1.0a/-/oauth-1.0a-2.2.5.tgz#943ee55a5c0db5c21143ec27e2f56c6d0e2a5e54"
   integrity sha512-7Y4Gs+2dPOjrlJDzEPdpuH46gzgYeVF7CKOOQNpWKz1nlbWn2rqKSt3oF0By6KxudbOQATEUY74SphuTN0grPg==
+
+omit-deep-lodash@^1.1.4:
+  version "1.1.4"
+  resolved "https://registry.yarnpkg.com/omit-deep-lodash/-/omit-deep-lodash-1.1.4.tgz#7f34abef077047f6aeb6968603bb03d4dbdba089"
+  integrity sha512-5ge7dBDVDYEU8YiqYlKxjsVesB3wqXejgluGx+9Xd8+PJH7VEEK9D4Pqpq7VE0ZtQh9HBz0LMNRk1BA3+bsd4Q==
+  dependencies:
+    lodash "~4.17.11"
 
 readable-stream@^1.0.31:
   version "1.1.14"

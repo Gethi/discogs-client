@@ -94,21 +94,25 @@
 //   console.log(item);
 // });
 
-
+const omitDeep = require("omit-deep-lodash");
 var fs        = require('fs');
 var path      = require('path');
-const Saxophone = require('saxophone');
-const parser = new Saxophone();
+var XmlStream = require('xml-stream');
+var fse = require('fs-extra');
+//const Saxophone = require('saxophone');
+//const parser = new Saxophone();
 
 
-//var stream = fs.createReadStream(path.join(__dirname, 'discogs_20190101_releases.xml'));
-var stream = fs.createReadStream(path.join(__dirname, 'releases_20080309.xml'));
+var stream = fs.createReadStream(path.join(__dirname, 'discogs_20190101_releases.xml'));
+//var stream = fs.createReadStream(path.join(__dirname, 'releases_20080309.xml'));
  
 // Called whenever an opening tag is found in the document,
 // such as <example id="1" /> - see below for a list of events
 
 // release
 // let release = {};
+
+/*
 let open = false;
 let tags = [];
 parser.on('tagopen', tag => {
@@ -128,6 +132,7 @@ parser.on('tagopen', tag => {
     //if(tags.length > 1 && tags[tags.length-1].name === "artist" && tag.name === "name") {
         // do nothing
     //} else {
+        //console.log(tag)
         tags.push(tag);
    // }
 });
@@ -150,7 +155,7 @@ parser.on('tagclose', ctag => {
             genres: [],
             styles: [],
         };
-        const attrCollection = ['images','artists', 'labels', 'formats', 'genres', 'styles'];
+        const attrCollection = ['images','artists', 'labels', 'formats', 'genres', 'styles', 'releases'];
         let previousArtist = {};
         let previousFormat = {};
         let previousDescriptions = {};
@@ -216,7 +221,7 @@ parser.on('tagclose', ctag => {
                         release['styles'].push(tmp);
                         break;
                     case "name": {
-                        if(previousTag.name === "artist" || previousTag.name === "name" || previousTag.name === "anv" || previousTag.name === "join") {
+                        if(previousTag.name === "artist" || previousTag.name === "name" || previousTag.name === "anv" || previousTag.name === "join" || previousTag.name === "id" || previousTag.name === "role" || previousTag.name === "tracks") {
                             previousArtist.name = tmp;
                         } else {
                             console.error(`Error >> Previous is not artist in name: ${previousTag.name}`);
@@ -224,7 +229,7 @@ parser.on('tagclose', ctag => {
                         break;
                     }
                     case "anv": {
-                        if(previousTag.name === "artist" || previousTag.name === "name" || previousTag.name === "anv" || previousTag.name === "join") {
+                        if(previousTag.name === "artist" || previousTag.name === "name" || previousTag.name === "anv" || previousTag.name === "join" || previousTag.name === "id" || previousTag.name === "role" || previousTag.name === "tracks") {
                             previousArtist.anv = tmp;
                         } else {
                             console.error(`Error >> Previous is not artist in anv: ${previousTag.name}`);
@@ -232,10 +237,34 @@ parser.on('tagclose', ctag => {
                         break;
                     }
                     case "join": {
-                        if(previousTag.name === "artist" || previousTag.name === "name" || previousTag.name === "anv" || previousTag.name === "join") {
+                        if(previousTag.name === "artist" || previousTag.name === "name" || previousTag.name === "anv" || previousTag.name === "join" || previousTag.name === "id" || previousTag.name === "role" || previousTag.name === "tracks") {
                             previousArtist.join = tmp;
                         } else {
                             console.error(`Error >> Previous is not artist in join: ${previousTag.name}`);
+                        }
+                        break;
+                    }
+                    case "id": {
+                        if(previousTag.name === "artist" || previousTag.name === "name" || previousTag.name === "anv" || previousTag.name === "join" || previousTag.name === "id" || previousTag.name === "role" || previousTag.name === "tracks") {
+                            previousArtist.id = tmp;
+                        } else {
+                            console.error(`Error >> Previous is not artist in id: ${previousTag.name}`);
+                        }
+                        break;
+                    }
+                    case "role": {
+                        if(previousTag.name === "artist" || previousTag.name === "name" || previousTag.name === "anv" || previousTag.name === "join" || previousTag.name === "id" || previousTag.name === "role" || previousTag.name === "tracks") {
+                            previousArtist.role = tmp;
+                        } else {
+                            console.error(`Error >> Previous is not artist in role: ${previousTag.name}`);
+                        }
+                        break;
+                    }
+                    case "tracks": {
+                        if(previousTag.name === "artist" || previousTag.name === "name" || previousTag.name === "anv" || previousTag.name === "join" || previousTag.name === "id" || previousTag.name === "role" || previousTag.name === "tracks") {
+                            previousArtist.tracks = tmp;
+                        } else {
+                            console.error(`Error >> Previous is not artist in tracks: ${previousTag.name}`);
                         }
                         break;
                     }
@@ -251,7 +280,7 @@ parser.on('tagclose', ctag => {
                         release[tag.name] = tmp;
                         break;
                     default:
-                        console.error(`Unknown tag name ${tag.name}, ${release.id}`);
+                        console.error(`Unknown tag ${tag.name}, ${release.id}`);
                         break;
                 }
                 
@@ -265,10 +294,12 @@ parser.on('tagclose', ctag => {
             //console.log("NO RELEASE DATE");
         }
         noRelease=true;
-        //if(count > 3000) {
-         //   exit(0);
-       // }
+        if(count > 0) {
+            exit(0);
+        }
        
+    } else {
+        //console.log(ctag.name)
     }
    
 });
@@ -277,8 +308,38 @@ parser.on('tagclose', ctag => {
 parser.on('finish', () => {
     console.log(count);
     console.log('Parsing finished.');
-});
+});*/
  
 // stdin is '<root><example id="1" /><example id="2" /></root>'
 stream.setEncoding('utf8');
-stream.pipe(parser);
+//stream.pipe(parser);
+
+
+var xml = new XmlStream(stream);
+
+xml.preserve('release', true);
+xml.collect('description');
+xml.collect('image');
+xml.collect('style');
+xml.collect('label');
+xml.collect('genre');
+xml.collect('video');
+xml.collect('format');
+xml.collect('company');
+xml.collect('track');
+xml.collect('identifier');
+xml.collect('company');
+xml.collect('artist');
+xml.on('endElement: release', function(item) {
+  console.log(item);
+  xml.pause();
+  const omited = omitDeep(item, "$children");
+  fse.writeJson('./getJson.json', omited , err => {
+    if (err) return console.error(err)
+  
+    console.log('success!')
+    //xml.resume();
+    exit(0);
+  });
+  
+});
