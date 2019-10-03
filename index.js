@@ -37,7 +37,7 @@ const formatArrayText = (unformat)=> {
     return formated;
 };
 
-const scanDir = (dirName) => {
+const scanDir = async (dirName) => {
     return new Promise((resolve,reject)=>{
         //joining path of directory 
         const directoryPath = path.join(__dirname, dirName);
@@ -291,63 +291,65 @@ const parseXML = (filePath)=> {
 //const numWorkers = require('os').cpus().length;
 //console.log('Master cluster setting up ' + numWorkers + ' workers...');
 
-if (cluster.isMaster) {
-    scanDir("XML").then(
-        (files)=>{
-            //console.log(files);
-            const nbFilesPerProcess = Math.floor(files.length / numCPUs);
-            const odd = files.length % numCPUs;
-            const filesPerProcess = [];
-            let filePointer = 0;
-            for (let i = 0; i < numCPUs; i++) {
-                filesPerProcess.push([]);
-                for (let j = filePointer; j < nbFilesPerProcess + filePointer; j++) {
-                    filesPerProcess[i].push(files[j]);
-                }
-                filePointer += nbFilesPerProcess;
-            }
-            if(odd) {
-                filesPerProcess[0].push(files[filePointer]);
-            }
-            //console.log(filesPerProcess);
 
-            let jobs = {};
-            for (let i = 0; i < numCPUs; i++) {
-                const worker = cluster.fork();
-                jobs[worker.process.pid] = filesPerProcess.pop();
+const processing = async ()=> {
+    if (cluster.isMaster) {
+        const files = await scanDir("XML");
+        console.log(files);
+        const nbFilesPerProcess = Math.floor(files.length / numCPUs);
+        const odd = files.length % numCPUs;
+        const filesPerProcess = [];
+        let filePointer = 0;
+        for (let i = 0; i < numCPUs; i++) {
+            filesPerProcess.push([]);
+            for (let j = filePointer; j < nbFilesPerProcess + filePointer; j++) {
+                filesPerProcess[i].push(files[j]);
             }
+            filePointer += nbFilesPerProcess;
+        }
+        if(odd) {
+            filesPerProcess[0].push(files[filePointer]);
+        }
+        //console.log(filesPerProcess);
 
-            //onsole.log(jobs);
+        let jobs = {};
+        for (let i = 0; i < numCPUs; i++) {
+            const worker = cluster.fork();
+            jobs[worker.process.pid] = filesPerProcess.pop();
+        }
 
-            cluster.on('online', function(worker) {
-                console.log('Worker ' + worker.process.pid + ' is online');
-                worker.send({
-                    type: 'job',
-                    from: 'master',
-                    data: jobs[worker.process.pid]
-                });
+        //onsole.log(jobs);
+
+        cluster.on('online', function(worker) {
+            console.log('Worker ' + worker.process.pid + ' is online');
+            worker.send({
+                type: 'job',
+                from: 'master',
+                data: jobs[worker.process.pid]
             });
-        }
-    );
-} else {
-    //console.log('Process ' + process.pid);
+        });
+    } else {
+        //console.log('Process ' + process.pid);
 
-    process.on('message', (message) => {
-        const filesToParse = message.data;
+        process.on('message', (message) => {
+            const filesToParse = message.data;
 
-        console.log(filesToParse);
+            console.log(filesToParse);
 
-        const promises = [];
-        for (let i = 0; i < filesToParse.length; i++) {
-             const file = filesToParse[i];
-             promises.push(parseXML(`./XMl/${file}`));
-        }
-        Promise.all(promises).then(
-            ()=>{
-                console.log('Worker ' + process.pid + ' terminated');
-                process.exit(0);
+            const promises = [];
+            for (let i = 0; i < filesToParse.length; i++) {
+                const file = filesToParse[i];
+                promises.push(parseXML(`./XMl/${file}`));
             }
-        );
-       
-    });
-}
+            Promise.all(promises).then(
+                ()=>{
+                    console.log('Worker ' + process.pid + ' terminated');
+                    process.exit(0);
+                }
+            );
+        
+        });
+    }
+};
+
+processing();
