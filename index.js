@@ -1,345 +1,353 @@
-// const {Client, util} = require('disconnect');
-//var parser = require('fast-xml-parser');
-// var he = require('he');
-
-
-// const discogs = new Client('MyUserAgent/1.0', {
-// 	consumerKey: 'UhQJzygSzPkpbKBOItfx', 
-// 	consumerSecret: 'tHoVRUZoZoKztDkAGUZVTkaJFCwKhLHC'
-// });
-
-// let authRequestData = null;
-// let authAccessData = null;
-// const oAuth = discogs.oauth();
-// const getRequestTokens = ()=> {
-//     return new Promise(
-//         (resolve) => {
-//             oAuth.getRequestToken(
-//                 'UhQJzygSzPkpbKBOItfx', 
-//                 'tHoVRUZoZoKztDkAGUZVTkaJFCwKhLHC', 
-//                 'http://your-script-url/callback', 
-//                 function(err, requestData){
-//                     authRequestData = requestData;
-//                     resolve();
-//                 }
-//             );
-//         }
-//     );
-// }
-
-// const getAccessTokens = ()=> {
-//     return new Promise(
-//         (resolve) => {
-//             oAuth.getAccessToken(
-//                 authRequestData.token, // Verification code sent back by Discogs
-//                 function(err, accessData){
-//                     // Persist "accessData" here for following OAuth calls 
-//                     authAccessData = accessData;
-//                     resolve();
-//                 }
-//             );
-//         }
-//     );
-// }
-
-
-// const run = async ()=> {
-//     console.log('Get Tokens !')
-//     await getRequestTokens();
-//     await getAccessTokens();
-
-//     const db = discogs.database();
-//     db.search(
-//         "", 
-//         {
-//             type: "release",
-//             per_page: 100,
-//             format: 'Vinyl',
-//             country: 'UK',
-//             genre: 'Electronic',
-//             style: 'House',
-//             // decade: '1990',
-//             year: '',
-//             page: 1
-//         }
-//     )
-// 	.then(function(release){ 
-//         console.log(release.pagination);
-        
-//         release.results.map(
-//             (result)=>{
-//                 if(!result.year) {
-//                     console.log(result.year)
-//                 }
-//             }
-//         )
-// 	})
-// }
-
-//run();
-
-
-// var fs        = require('fs')
-//   , path      = require('path')
-//   , XmlStream = require('xml-stream')
-//   ;
-
-// // Create a file stream and pass it to XmlStream
-// var stream = fs.createReadStream(path.join(__dirname, 'releases_20080309.xml'));
-// var xml = new XmlStream(stream);
-
-// xml.preserve('release', true);
-// //xml.collect('artists');
-// xml.on('endElement: release', function(item) {
-//   console.log(item);
-// });
 
 const omitDeep = require("omit-deep-lodash");
 var fs        = require('fs');
 var path      = require('path');
 var XmlStream = require('xml-stream');
 var fse = require('fs-extra');
-//const Saxophone = require('saxophone');
-//const parser = new Saxophone();
 
+var cluster = require('cluster');
+var numCPUs = 4; // IMPORTANT
 
-var stream = fs.createReadStream(path.join(__dirname, 'discogs_20190101_releases.xml'));
-//var stream = fs.createReadStream(path.join(__dirname, 'releases_20080309.xml'));
- 
-// Called whenever an opening tag is found in the document,
-// such as <example id="1" /> - see below for a list of events
-
-// release
-// let release = {};
-
-/*
-let open = false;
-let tags = [];
-parser.on('tagopen', tag => {
-   // if(tag.name === "release") {
-    //    open = true;
-        
-   // } else if(open){
-        //console.log(tag)
-        // release[tag.name] = Saxophone.parseAttrs(tag.attrs);
-
-        //parseEntities(tag.text)
-  //  }
-    // console.log(
-    //     `Open tag "${tag.name}" with attributes: ${JSON.stringify(Saxophone.parseAttrs(tag.attrs))}.`
-    // );
-
-    //if(tags.length > 1 && tags[tags.length-1].name === "artist" && tag.name === "name") {
-        // do nothing
-    //} else {
-        //console.log(tag)
-        tags.push(tag);
-   // }
-});
-parser.on('text', text => {
-    //onsole.log(Saxophone.parseEntities(text.contents))
-    //console.log(text.contents)
-    if(tags.length > 1) {
-        tags[tags.length-1].content = text.contents;
+const formatArrayByAttribute = (unformat, attributeName)=> {
+    if(unformat.length === 0) return unformat;
+    let formated = unformat;
+    for (let j = 0; j < formated.length; j++) {
+        formated[j] = formated[j][attributeName];
     }
-});
+    return formated;
+};
 
-let count = 0;
-parser.on('tagclose', ctag => {
-    if(ctag.name === "release") {
-        let release = {
-            images: [],
-            artists: [],
-            labels: [],
-            formats: [],
-            genres: [],
-            styles: [],
-        };
-        const attrCollection = ['images','artists', 'labels', 'formats', 'genres', 'styles', 'releases'];
-        let previousArtist = {};
-        let previousFormat = {};
-        let previousDescriptions = {};
-        let noRelease = true;
-        for (let i = 0; i < tags.length; i++) {
-            const tag = tags[i];
-            const previousTag = i > 1 ? tags[i-1]: null;
-            if(tag.name === "release") {
-                release = {
-                    ...release,
-                    ...Saxophone.parseAttrs(tag.attrs),
+const formatArrayText = (unformat)=> {
+    if(unformat.length === 0) return unformat;
+    let formated = unformat;
+    for (let j = 0; j < formated.length; j++) {
+        const attributes = Object.keys(formated[j]);
+        for (let k = 0; k < attributes.length; k++) {
+            const attribute = attributes[k];
+            if(formated[j][attribute].$text) {
+                formated[j][attribute] = formated[j][attribute].$text;
+            } else if(Object.keys(formated[j][attribute]).length === 0) {
+                formated[j][attribute] = null;
+            } else if (attribute === "extraartists") {
+                formated[j][attribute] = formated[j][attribute].artist || [];
+                formated[j][attribute] = formatArrayText(formated[j][attribute]);
+            } 
+        }
+    }
+    return formated;
+};
+
+const scanDir = (dirName) => {
+    return new Promise((resolve,reject)=>{
+        //joining path of directory 
+        const directoryPath = path.join(__dirname, dirName);
+        //passsing directoryPath and callback function
+        fs.readdir(directoryPath, function (err, files) {
+            //handling error
+            if (err) {
+                console.log('Unable to scan directory: ' + err);
+                reject();
+            }
+            const filtered = files.filter(item => !(/(^|\/)\.[^\/\.]/g).test(item));
+            resolve(filtered);
+        });
+    });
+};
+
+
+const parseXML = (filePath)=> {
+    return new Promise((resolve,reject)=>{
+
+        const stream = fs.createReadStream(path.join(__dirname, filePath));
+        stream.setEncoding('utf8');
+
+        const xml = new XmlStream(stream);
+
+        let parseEnded = false;
+        let tokenToResolve = -1;
+
+        xml.preserve('release', true);
+        xml.collect('description');
+        xml.collect('image');
+        xml.collect('style');
+        xml.collect('label');
+        xml.collect('genre');
+        xml.collect('video');
+        xml.collect('format');
+        xml.collect('company');
+        xml.collect('track');
+        xml.collect('identifier');
+        xml.collect('url');
+        xml.collect('artist');
+        xml.on('end', function() {
+            parseEnded = true;
+        });
+        xml.on('endElement: release', function(item) {
+            //console.log(item);
+            xml.pause();
+
+            if(parseEnded) {
+                clearTimeout(tokenToResolve);
+                tokenToResolve = setTimeout(() => {
+                    resolve();
+                }, 1000);
+            }
+
+            let omited = omitDeep(item, "$children");
+            omited = omitDeep(omited, "$name");
+
+            omited = {
+                ...omited,
+                ...omited.$
+            };
+
+            delete omited.$;
+            delete omited.$name;
+
+            omited.title = omited.title.$text;
+
+            if(omited.master_id) {
+                omited.master_id.master_id = omited.master_id.$text;
+                omited.master_id = {
+                    ...omited.master_id,
+                    ...omited.master_id.$
+                };
+                delete omited.master_id.$;
+                delete omited.master_id.$text;
+            }
+        
+        
+            try {
+                omited.country = omited.country.$text;
+            } catch (error) {
+                omited.country = "";
+            }
+
+            try {
+                omited.released = omited.released.$text;
+                let rDate = omited.released;
+                if(omited.released.length > 4) {
+                    rDate = new Date(omited.released);
+                    rDate = rDate.getFullYear().toString();
+                    omited.releasedDate = omited.released;
+                } else {
+                    omited.releasedDate = `${rDate}-02-01`;
                 }
-            } else if(attrCollection.indexOf(tag.name) !== -1){
-                // do nothing
-            } else {
-                let tmp = {
-                    tagName: tag.name,
-                    content: tag.content || null,
-                    attrs: Saxophone.parseAttrs(tag.attrs),
-                }
-                
-                //console.log(release.hasOwnProperty(tag.name))
-                switch (tag.name) {
-                    case "image":
-                        release['images'].push(tmp);
-                        break;
-                    case "artist":
-                        release['artists'].push(tmp);
-                        previousArtist = tmp;
-                        break;
-                    case "label":
-                        release['labels'].push(tmp);
-                        break;
-                    case "format":
-                        tmp = {
-                            ...tmp,
-                            descriptions: []
-                        };
-                        release['formats'].push(tmp);
-                        previousFormat = tmp;
-                        break;
-                    case "descriptions": {
-                        if(previousTag.name === "format") {
-                            previousDescriptions = previousFormat.descriptions;
-                        } else {
-                            console.error(`Error >> Previous is not format: ${previousTag.name}`);
-                        }
-                        break;
-                    }
-                    case "description":{
-                        if(previousTag.name === "descriptions" || previousTag.name === "description") {
-                            //release['formats'][0].descriptions.push(tmp);
-                            previousDescriptions.push(tmp);
-                        } else {
-                           console.error(`Error >> Previous is not descriptions: ${previousTag.name}`);
-                        }
-                        break;
-                    }
-                    case "genre":
-                        release['genres'].push(tmp);
-                        break;
-                    case "style":
-                        release['styles'].push(tmp);
-                        break;
-                    case "name": {
-                        if(previousTag.name === "artist" || previousTag.name === "name" || previousTag.name === "anv" || previousTag.name === "join" || previousTag.name === "id" || previousTag.name === "role" || previousTag.name === "tracks") {
-                            previousArtist.name = tmp;
-                        } else {
-                            console.error(`Error >> Previous is not artist in name: ${previousTag.name}`);
-                        }
-                        break;
-                    }
-                    case "anv": {
-                        if(previousTag.name === "artist" || previousTag.name === "name" || previousTag.name === "anv" || previousTag.name === "join" || previousTag.name === "id" || previousTag.name === "role" || previousTag.name === "tracks") {
-                            previousArtist.anv = tmp;
-                        } else {
-                            console.error(`Error >> Previous is not artist in anv: ${previousTag.name}`);
-                        }
-                        break;
-                    }
-                    case "join": {
-                        if(previousTag.name === "artist" || previousTag.name === "name" || previousTag.name === "anv" || previousTag.name === "join" || previousTag.name === "id" || previousTag.name === "role" || previousTag.name === "tracks") {
-                            previousArtist.join = tmp;
-                        } else {
-                            console.error(`Error >> Previous is not artist in join: ${previousTag.name}`);
-                        }
-                        break;
-                    }
-                    case "id": {
-                        if(previousTag.name === "artist" || previousTag.name === "name" || previousTag.name === "anv" || previousTag.name === "join" || previousTag.name === "id" || previousTag.name === "role" || previousTag.name === "tracks") {
-                            previousArtist.id = tmp;
-                        } else {
-                            console.error(`Error >> Previous is not artist in id: ${previousTag.name}`);
-                        }
-                        break;
-                    }
-                    case "role": {
-                        if(previousTag.name === "artist" || previousTag.name === "name" || previousTag.name === "anv" || previousTag.name === "join" || previousTag.name === "id" || previousTag.name === "role" || previousTag.name === "tracks") {
-                            previousArtist.role = tmp;
-                        } else {
-                            console.error(`Error >> Previous is not artist in role: ${previousTag.name}`);
-                        }
-                        break;
-                    }
-                    case "tracks": {
-                        if(previousTag.name === "artist" || previousTag.name === "name" || previousTag.name === "anv" || previousTag.name === "join" || previousTag.name === "id" || previousTag.name === "role" || previousTag.name === "tracks") {
-                            previousArtist.tracks = tmp;
-                        } else {
-                            console.error(`Error >> Previous is not artist in tracks: ${previousTag.name}`);
-                        }
-                        break;
-                    }
-                    case "released": {
-                        noRelease = false;
-                        release[tag.name] = tmp;
-                        break;
-                    }
-                    case "title":
-                    case "country":
-                    case "released":
-                    case "notes":
-                        release[tag.name] = tmp;
-                        break;
-                    default:
-                        console.error(`Unknown tag ${tag.name}, ${release.id}`);
-                        break;
-                }
-                
+                omited.releasedDecade = `${rDate[0]}${rDate[1]}${rDate[2]}0`;
+            } catch (error) {
+                omited.released = "";
             }
             
+            try {
+                omited.notes = omited.notes.$text;
+            } catch (error) {
+                omited.notes = "";
+            }
+            
+            try {
+                omited.data_quality = omited.data_quality.$text;
+            } catch (error) {
+                omited.data_quality = "";
+            }
+
+            try {
+                omited.formats = omited.formats.format || [];
+                omited.joinformats = [];
+                for (let i = 0; i < omited.formats.length; i++) {
+                    omited.formats[i] = {
+                        ...omited.formats[i],
+                        ...omited.formats[i].$
+                    };
+                    delete omited.formats[i].$;
+
+                    try {
+                        omited.formats[i].descriptions = omited.formats[i].descriptions.description;
+                    } catch (error) {
+                        omited.formats[i].descriptions = [];
+                    }
+                    omited.formats[i].descriptions = formatArrayByAttribute(omited.formats[i].descriptions, "$text");
+                    
+                    omited.joinformats.push(omited.formats[i].name);
+                }
+            } catch (error) {
+                omited.formats = [];
+            }
+
+            try {
+                omited.artists = omited.artists.artist || [];
+            } catch (error) {
+                omited.artists = [];
+            }
+            omited.artists = formatArrayText(omited.artists);
+
+            try {
+                omited.extraartists = omited.extraartists.artist || [];
+            } catch (error) {
+                omited.extraartists = [];
+            }
+            omited.extraartists = formatArrayText(omited.extraartists);
+            
+            try {
+                omited.tracklist = omited.tracklist.track || [];
+            } catch (error) {
+                omited.tracklist = [];
+            }
+            omited.tracklist = formatArrayText(omited.tracklist);
+
+            try {
+                omited.identifiers = omited.identifiers.identifier || [];
+            } catch (error) {
+                omited.identifiers = [];
+            }
+
+            try {
+                omited.genres = omited.genres.genre || [];
+            } catch (error) {
+                omited.genres = [];
+            }
+            omited.genres = formatArrayByAttribute(omited.genres, "$text");
+
+            try {
+                omited.images = omited.images.image || [];
+            } catch (error) {
+                omited.images = [];
+            }
+            omited.images = formatArrayByAttribute(omited.images, "$");
+            for (let j = 0; j < omited.images.length; j++) {
+                const keys = Object.keys(omited.images[j]);
+                for (let i = 0; i < keys.length; i++) {
+                    omited.images[j][keys[i]] = omited.images[j][keys[i]] === "" ? null : omited.images[j][keys[i]];
+                }
+            }
+
+            try {
+                omited.videos = omited.videos.video || [];
+                for (let i = 0; i < omited.videos.length; i++) {
+                    omited.videos[i].title = omited.videos[i].title.$text;
+                    if(omited.videos[i].description) {
+                        omited.videos[i].description = formatArrayByAttribute(omited.videos[i].description, "$text");
+                    }
+                    omited.videos[i] = {
+                        ...omited.videos[i],
+                        ...omited.videos[i].$
+                    };
+                    delete omited.videos[i].$;
+                }
+            } catch (error) {
+                omited.videos = [];
+            }
+
+            try {
+                omited.companies = omited.companies.company || [];
+                for (let i = 0; i < omited.companies.length; i++) {
+                    try {
+                        omited.companies[i].id = omited.companies[i].id.$text;
+                        omited.companies[i].name = omited.companies[i].name.$text;
+                        omited.companies[i].entity_type = omited.companies[i].entity_type.$text;
+                        omited.companies[i].entity_type_name = omited.companies[i].entity_type_name.$text;
+                        omited.companies[i].resource_url = omited.companies[i].resource_url.$text;
+                        omited.companies[i].catno = omited.companies[i].catno.$text;
+                    } catch (error) {
+                        //console.log("companies reordering > ", error);
+                    }
+                }
+            } catch (error) {
+                omited.companies = [];
+            }
+
+            try {
+                omited.styles = omited.styles.style || [];
+                for (let i = 0; i < omited.styles.length; i++) {
+                    omited.styles[i] = omited.styles[i].$text;
+                }
+            } catch (error) {
+                omited.styles = [];
+            }
+
+            try {
+                omited.labels = omited.labels.label || [];
+                for (let i = 0; i < omited.labels.length; i++) {
+                    omited.labels[i] = {
+                        ...omited.labels[i],
+                        ...omited.labels[i].$
+                    };
+                    delete  omited.labels[i].$;
+                }
+            } catch (error) {
+                omited.labels = [];
+            }
+
+            fse.writeJson(`./JSON/getJson_${omited.id}.json`, omited, {spaces: 4},
+                err => {
+                    if (err) return console.error(err)
+                
+                    xml.resume();
+                    //exit(0);
+            });
+        });
+    });
+};
+
+//const numWorkers = require('os').cpus().length;
+//console.log('Master cluster setting up ' + numWorkers + ' workers...');
+
+if (cluster.isMaster) {
+    scanDir("XML").then(
+        (files)=>{
+            //console.log(files);
+            const nbFilesPerProcess = Math.floor(files.length / numCPUs);
+            const odd = files.length % numCPUs;
+            const filesPerProcess = [];
+            let filePointer = 0;
+            for (let i = 0; i < numCPUs; i++) {
+                filesPerProcess.push([]);
+                for (let j = filePointer; j < nbFilesPerProcess + filePointer; j++) {
+                    filesPerProcess[i].push(files[j]);
+                }
+                filePointer += nbFilesPerProcess;
+            }
+            if(odd) {
+                filesPerProcess[0].push(files[filePointer]);
+            }
+            //console.log(filesPerProcess);
+
+            let jobs = {};
+            for (let i = 0; i < numCPUs; i++) {
+                const worker = cluster.fork();
+                jobs[worker.process.pid] = filesPerProcess.pop();
+            }
+
+            //onsole.log(jobs);
+
+            cluster.on('online', function(worker) {
+                console.log('Worker ' + worker.process.pid + ' is online');
+                worker.send({
+                    type: 'job',
+                    from: 'master',
+                    data: jobs[worker.process.pid]
+                });
+            });
         }
-        count++;
-        //console.log(release);
-        tags = [];
-        if(noRelease) {
-            //console.log("NO RELEASE DATE");
+    );
+} else {
+    //console.log('Process ' + process.pid);
+
+    process.on('message', (message) => {
+        const filesToParse = message.data;
+
+        console.log(filesToParse);
+
+        const promises = [];
+        for (let i = 0; i < filesToParse.length; i++) {
+             const file = filesToParse[i];
+             promises.push(parseXML(`./XMl/${file}`));
         }
-        noRelease=true;
-        if(count > 0) {
-            exit(0);
-        }
+        Promise.all(promises).then(
+            ()=>{
+                console.log('Worker ' + process.pid + ' terminated');
+                process.exit(0);
+            }
+        );
        
-    } else {
-        //console.log(ctag.name)
-    }
-   
-});
- 
-// Called when we are done parsing the document
-parser.on('finish', () => {
-    console.log(count);
-    console.log('Parsing finished.');
-});*/
- 
-// stdin is '<root><example id="1" /><example id="2" /></root>'
-stream.setEncoding('utf8');
-//stream.pipe(parser);
-
-
-var xml = new XmlStream(stream);
-
-xml.preserve('release', true);
-xml.collect('description');
-xml.collect('image');
-xml.collect('style');
-xml.collect('label');
-xml.collect('genre');
-xml.collect('video');
-xml.collect('format');
-xml.collect('company');
-xml.collect('track');
-xml.collect('identifier');
-xml.collect('company');
-xml.collect('artist');
-xml.on('endElement: release', function(item) {
-  console.log(item);
-  xml.pause();
-  const omited = omitDeep(item, "$children");
-  fse.writeJson('./getJson.json', omited , err => {
-    if (err) return console.error(err)
-  
-    console.log('success!')
-    //xml.resume();
-    exit(0);
-  });
-  
-});
+    });
+}
