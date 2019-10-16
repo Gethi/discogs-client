@@ -277,7 +277,7 @@ const parseXML = (filePath)=> {
                 omited.labels = [];
             }
 
-            fse.writeJson(`./JSON/getJson_${omited.id}.json`, omited, {spaces: 4},
+            fse.writeJson(`./data/JSON/getJson_${omited.id}.json`, omited, {spaces: 4},
                 err => {
                     if (err) return console.error(err)
                 
@@ -294,7 +294,7 @@ const parseXML = (filePath)=> {
 
 const processing = async ()=> {
     if (cluster.isMaster) {
-        const files = await scanDir("XML");
+        const files = await scanDir("data/XML");
         console.log(files);
         const nbFilesPerProcess = Math.floor(files.length / numCPUs);
         const odd = files.length % numCPUs;
@@ -339,7 +339,7 @@ const processing = async ()=> {
             const promises = [];
             for (let i = 0; i < filesToParse.length; i++) {
                 const file = filesToParse[i];
-                promises.push(parseXML(`./XMl/${file}`));
+                promises.push(parseXML(`./data/XMl/${file}`));
             }
             Promise.all(promises).then(
                 ()=>{
