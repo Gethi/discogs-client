@@ -49,7 +49,8 @@ const scanDir = async (dirName) => {
                 reject();
             }
             const filtered = files.filter(item => {
-                return !(/(^|\/)\.[^\/\.]/g).test(item) && (/\.xml$/g).test(item) && !(/discogs_20190901_releases-exc\.xml$/g).test(item)
+                //!(/(^|\/)\.[^\/\.]/g).test(item)
+                return (/\.xml$/g).test(item) && !(/discogs_20190901_releases-exc.xml$/g).test(item) && !(/discogs_20190901_releases-exc-00.xml$/g).test(item)
             });
             resolve(filtered);
         });
