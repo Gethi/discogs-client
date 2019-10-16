@@ -48,7 +48,9 @@ const scanDir = async (dirName) => {
                 console.log('Unable to scan directory: ' + err);
                 reject();
             }
-            const filtered = files.filter(item => !(/(^|\/)\.[^\/\.]/g).test(item));
+            const filtered = files.filter(item => {
+                return !(/(^|\/)\.[^\/\.]/g).test(item) && (/\.xml$/g).test(item) && !(/discogs_20190901_releases-exc\.xml$/g).test(item)
+            });
             resolve(filtered);
         });
     });
