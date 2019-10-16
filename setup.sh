@@ -13,3 +13,7 @@ cd tools
 ./xml_split -s1Mb ../data/XML/discogs_20190901_releases-exc.xml
 cd ..
 ls -l data/XML
+
+node index.js
+
+ls -l data/JSON
