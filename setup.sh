@@ -7,10 +7,9 @@ mv tmp/* tmp/.git* .
 rm -rf tmp
 
 yarn install
-ls -l
 
 gzip -d data/XML/discogs_20190901_releases-exc.xml.gz
 cd tools
-./xml_split -s1Mb ../data/XML/discogs_20190901_releases-exc.xml
+./xml_split -s1Mb -b part ../data/XML/discogs_20190901_releases-exc.xml
 cd ..
 ls -l data/XML
