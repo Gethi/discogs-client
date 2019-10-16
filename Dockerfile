@@ -6,9 +6,8 @@ RUN curl -sL https://dl.yarnpkg.com/rpm/yarn.repo | tee /etc/yum.repos.d/yarn.re
 RUN rpm --import https://dl.yarnpkg.com/rpm/pubkey.gpg
 RUN yum -y install yarn
 RUN mkdir /wks
-RUN mkdir /wks/data
-RUN mkdir /wks/data/XML
 COPY setup.sh /
-COPY discogs_20190901_releases-exc.xml.gz /wks/data/XML
+#tmp
+COPY discogs_20190901_releases-exc.xml.gz /wks
 WORKDIR /
 ENTRYPOINT ["/setup.sh"]
