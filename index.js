@@ -6,7 +6,7 @@ var XmlStream = require('xml-stream');
 var fse = require('fs-extra');
 
 var cluster = require('cluster');
-var numCPUs = 4; // IMPORTANT
+var numCPUs = 2; // IMPORTANT
 
 const formatArrayByAttribute = (unformat, attributeName)=> {
     if(unformat.length === 0) return unformat;

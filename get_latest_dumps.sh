@@ -29,3 +29,6 @@ else
                 aria2c -c "$f"
         done
 fi
+
+#gunzip discogs_20190901_releases.xml.gz
+#./xml_split -s200Mb out/discogs_20190901_releases.xml
