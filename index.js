@@ -297,7 +297,7 @@ const parseXML = (filePath)=> {
 
 const processing = async ()=> {
     if (cluster.isMaster) {
-        const files = await scanDir("data/XML");
+        const files = await scanDir("./data/XML");
         console.log(files);
         const nbFilesPerProcess = Math.floor(files.length / numCPUs);
         const odd = files.length % numCPUs;
