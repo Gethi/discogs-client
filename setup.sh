@@ -1,7 +1,7 @@
 #!/bin/bash
 #set -xv
 
-git clone https://github.com/Gethi/discogs-client.git /wks
+git clone -b feature/refactor https://github.com/Gethi/discogs-client.git /wks
 cd /wks
 
 tar xvzf tools.tar.gz
