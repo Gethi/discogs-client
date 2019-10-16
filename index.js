@@ -342,7 +342,7 @@ const processing = async ()=> {
             const promises = [];
             for (let i = 0; i < filesToParse.length; i++) {
                 const file = filesToParse[i];
-                promises.push(parseXML(`./data/XMl/${file}`));
+                promises.push(parseXML(`./data/XML/${file}`));
             }
             Promise.all(promises).then(
                 ()=>{
