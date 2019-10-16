@@ -4,14 +4,15 @@
 cd /wks
 git clone -b feature/refactor https://github.com/Gethi/discogs-client.git tmp
 mv tmp/* tmp/.git* .
-rmdir tmp
+#rmdir tmp
+ls -l
 
 #tar xvzf tools.tar.gz
 #cp -rf tools/* .
 #rm -r tools
 #rm tools.tar.gz
 
-npm install
+yarn install
 
 gzip -d data/XML/discogs_20190901_releases-exc.xml.gz
 ls -l
