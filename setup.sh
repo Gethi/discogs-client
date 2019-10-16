@@ -1,18 +1,22 @@
 #!/bin/bash
 #set -xv
 
-git clone -b feature/refactor https://github.com/Gethi/discogs-client.git /wks
 cd /wks
+git clone -b feature/refactor https://github.com/Gethi/discogs-client.git tmp
+mv tmp/* tmp/.git* .
+rmdir tmp
 
-tar xvzf tools.tar.gz
+#tar xvzf tools.tar.gz
 #cp -rf tools/* .
 #rm -r tools
 #rm tools.tar.gz
 
-yarn install
+npm install
 
 gzip -d data/XML/discogs_20190901_releases-exc.xml.gz
 ls -l
 ls -l data
-./tools/xml_split -s1Mb ./data/XML/discogs_20190901_releases-exc.xml
+cd tools
+./xml_split -s1Mb ../data/XML/discogs_20190901_releases-exc.xml
+cd ..
 ls -l data/XML
