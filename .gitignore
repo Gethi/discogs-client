@@ -148,3 +148,5 @@ packaged.yaml
 
 **/*.css
 **/*.css.map
+
+discogs_20190901_releases-exc.xml
