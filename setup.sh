@@ -3,7 +3,7 @@
 
 df -h
 pwd
-ls -l 
+ls -l /scratch
 ls -l /
 
 #yum -y install gcc-c++ make git
