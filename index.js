@@ -67,6 +67,7 @@ const parseXML = (filePath)=> {
         const xml = new XmlStream(stream);
 
         let parseEnded = false;
+        let hasRelease = false;
         let tokenToResolve = -1;
 
         xml.preserve('release', true);
@@ -84,10 +85,17 @@ const parseXML = (filePath)=> {
         xml.collect('artist');
         xml.on('end', function() {
             parseEnded = true;
+            if(!hasRelease) {
+                clearTimeout(tokenToResolve);
+                tokenToResolve = setTimeout(() => {
+                    resolve();
+                }, 10000);
+            }
         });
         xml.on('endElement: release', function(item) {
             //console.log(item);
             xml.pause();
+            hasRelease = true;
 
             if(parseEnded) {
                 clearTimeout(tokenToResolve);
@@ -285,7 +293,14 @@ const parseXML = (filePath)=> {
                     if (err) return console.error(err)
                 
                     xml.resume();
-                    //exit(0);
+                    hasRelease = false;
+
+                    if(parseEnded) {
+                        clearTimeout(tokenToResolve);
+                        tokenToResolve = setTimeout(() => {
+                            resolve();
+                        }, 10000);
+                    }
             });
         });
     });
