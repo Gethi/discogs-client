@@ -1,6 +1,7 @@
 #!/bin/bash
 #set -xv
 
+cp /wks/discogs_20190901_releases-exc.xml.gz /scratch
 df -h
 pwd
 ls -l /scratch
