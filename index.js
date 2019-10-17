@@ -83,7 +83,12 @@ const parseXML = (filePath)=> {
         xml.collect('identifier');
         xml.collect('url');
         xml.collect('artist');
+        xml.on('error', function(message) {
+            console.log('Parsing as ' + (encoding || 'auto') + ' failed: ' + message);
+        });
         xml.on('end', function() {
+
+            ////////////////////////////////////////////////
             parseEnded = true;
             if(!hasRelease) {
                 clearTimeout(tokenToResolve);
@@ -91,18 +96,22 @@ const parseXML = (filePath)=> {
                     resolve();
                 }, 10000);
             }
+            ////////////////////////////////////////////////
+
         });
         xml.on('endElement: release', function(item) {
             //console.log(item);
             xml.pause();
+            
+            ////////////////////////////////////////////////
             hasRelease = true;
-
             if(parseEnded) {
                 clearTimeout(tokenToResolve);
                 tokenToResolve = setTimeout(() => {
                     resolve();
                 }, 10000);
             }
+            ////////////////////////////////////////////////
 
             let omited = omitDeep(item, "$children");
             omited = omitDeep(omited, "$name");
@@ -293,14 +302,16 @@ const parseXML = (filePath)=> {
                     if (err) return console.error(err)
                 
                     xml.resume();
+                    
+                    ////////////////////////////////////////////////
                     hasRelease = false;
-
                     if(parseEnded) {
                         clearTimeout(tokenToResolve);
                         tokenToResolve = setTimeout(() => {
                             resolve();
                         }, 10000);
                     }
+                    ////////////////////////////////////////////////
             });
         });
     });
