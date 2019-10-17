@@ -2,6 +2,9 @@
 #set -xv
 
 df -h
+pwd
+ls -l 
+ls -l /
 
 yum -y install gcc-c++ make git
 curl -sL https://rpm.nodesource.com/setup_10.x | bash -
