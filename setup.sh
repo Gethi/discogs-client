@@ -13,7 +13,7 @@ ls -l /
 #rpm --import https://dl.yarnpkg.com/rpm/pubkey.gpg
 #yum -y install yarn
 
-#cd /wks
+#cd /scratch
 #git clone -b feature/refactor https://github.com/Gethi/discogs-client.git tmp
 #mv tmp/* tmp/.git* .
 #rm -rf tmp
