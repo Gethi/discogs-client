@@ -93,7 +93,7 @@ const parseXML = (filePath)=> {
                 clearTimeout(tokenToResolve);
                 tokenToResolve = setTimeout(() => {
                     resolve();
-                }, 1000);
+                }, 10000);
             }
 
             let omited = omitDeep(item, "$children");
@@ -337,6 +337,7 @@ const processing = async ()=> {
         process.on('message', (message) => {
             const filesToParse = message.data;
 
+            console.log('Worker ' + process.pid);
             console.log(filesToParse);
 
             const promises = [];
