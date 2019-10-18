@@ -6,6 +6,7 @@
   "author": "Gethi <bigard.antoine@gmail.com>",
   "license": "MIT",
   "dependencies": {
+    "aws-sdk": "^2.552.0",
     "fs-extra": "^7.0.1",
     "omit-deep-lodash": "^1.1.4",
     "xml-stream": "^0.4.5"
