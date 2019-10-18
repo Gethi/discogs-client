@@ -5,9 +5,37 @@ var fs        = require('fs');
 var path      = require('path');
 var XmlStream = require('xml-stream');
 var fse = require('fs-extra');
-
 var cluster = require('cluster');
-var numCPUs = 6; // IMPORTANT
+var AWS = require('aws-sdk');
+
+// Set the region 
+AWS.config.update({region: 'us-west-1'});
+
+// Create the DynamoDB service object
+const ddb = new AWS.DynamoDB.DocumentClient();
+
+var numCPUs = 2; // IMPORTANT
+
+
+const saveToDb = (item)=> {
+    return new Promise((resolve,reject)=>{
+        var params = {
+            TableName: 'discogs-releases',
+            Item: item
+          };
+          
+          ddb.put(params, function(err, data) {
+            if (err) {
+                console.log("Error", err);
+                reject();
+              } else {
+                console.log("Success", data);
+                resolve();
+              }
+          });
+         
+    });
+};
 
 const formatArrayByAttribute = (unformat, attributeName)=> {
     if(unformat.length === 0) return unformat;
@@ -148,8 +176,8 @@ const parseXML = (filePath)=> {
                 omited.released = omited.released.$text;
                 let rDate = omited.released;
                 if(omited.released.length > 4) {
-                    rDate = new Date(omited.released);
-                    rDate = rDate.getFullYear().toString();
+                    const splitD = rDate.split("-");
+                    rDate = splitD[0];
                     omited.releasedDate = omited.released;
                 } else {
                     omited.releasedDate = `${rDate}-02-01`;
@@ -302,7 +330,21 @@ const parseXML = (filePath)=> {
             const replacedNullObject = deepReplaceInObject(null, false, omited);
             const replacedEmptyString = deepReplaceInObject("", false, replacedNullObject);
 
-            fse.writeJson(`./data/JSON/getJson_${replacedEmptyString.id}.json`, replacedEmptyString, {spaces: 4},
+
+            saveToDb(replacedEmptyString).then(()=>{
+                xml.resume();
+                ////////////////////////////////////////////////
+                hasRelease = false;
+                if(parseEnded) {
+                    clearTimeout(tokenToResolve);
+                    tokenToResolve = setTimeout(() => {
+                        resolve();
+                    }, 10000);
+                }
+                ////////////////////////////////////////////////
+            });
+
+            /*fse.writeJson(`./data/JSON/getJson_${replacedEmptyString.id}.json`, replacedEmptyString, {spaces: 4},
                 err => {
                     if (err) return console.error(err)
                 
@@ -317,7 +359,9 @@ const parseXML = (filePath)=> {
                         }, 10000);
                     }
                     ////////////////////////////////////////////////
-            });
+            });*/
+
+
         });
     });
 };
