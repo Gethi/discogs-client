@@ -1,5 +1,6 @@
 
 const omitDeep = require("omit-deep-lodash");
+const deepReplaceInObject = require("deep-replace-in-object");
 var fs        = require('fs');
 var path      = require('path');
 var XmlStream = require('xml-stream');
@@ -297,7 +298,11 @@ const parseXML = (filePath)=> {
                 omited.labels = [];
             }
 
-            fse.writeJson(`./data/JSON/getJson_${omited.id}.json`, omited, {spaces: 4},
+            
+            const replacedNullObject = deepReplaceInObject(null, false, omited);
+            const replacedEmptyString = deepReplaceInObject("", false, replacedNullObject);
+
+            fse.writeJson(`./data/JSON/getJson_${replacedEmptyString.id}.json`, replacedEmptyString, {spaces: 4},
                 err => {
                     if (err) return console.error(err)
                 
