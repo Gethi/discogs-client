@@ -6,36 +6,14 @@ var path      = require('path');
 var XmlStream = require('xml-stream');
 var fse = require('fs-extra');
 var cluster = require('cluster');
-var AWS = require('aws-sdk');
+
+const { exec,execSync } = require('child_process');
+//var AWS = require('aws-sdk');
 
 // Set the region 
-AWS.config.update({region: 'us-west-1'});
+//AWS.config.update({region: 'us-west-1'});
 
-// Create the DynamoDB service object
-const ddb = new AWS.DynamoDB.DocumentClient();
-
-var numCPUs = 2; // IMPORTANT
-
-
-const saveToDb = (item)=> {
-    return new Promise((resolve,reject)=>{
-        var params = {
-            TableName: 'discogs-releases',
-            Item: item
-          };
-          
-          ddb.put(params, function(err, data) {
-            if (err) {
-                console.log("Error", err);
-                reject();
-              } else {
-                console.log("Success", data);
-                resolve();
-              }
-          });
-         
-    });
-};
+var numCPUs = 4; // IMPORTANT
 
 const formatArrayByAttribute = (unformat, attributeName)=> {
     if(unformat.length === 0) return unformat;
@@ -87,7 +65,7 @@ const scanDir = async (dirName) => {
 };
 
 
-const parseXML = (filePath)=> {
+const parseXML = (filePath, iterator)=> {
     return new Promise((resolve,reject)=>{
 
         const stream = fs.createReadStream(path.join(__dirname, filePath));
@@ -116,9 +94,10 @@ const parseXML = (filePath)=> {
             console.log('Parsing as ' + (encoding || 'auto') + ' failed: ' + message);
         });
         xml.on('end', function() {
-
-            ////////////////////////////////////////////////
             parseEnded = true;
+            
+            ////////////////////////////////////////////////
+            
             if(!hasRelease) {
                 clearTimeout(tokenToResolve);
                 tokenToResolve = setTimeout(() => {
@@ -176,11 +155,12 @@ const parseXML = (filePath)=> {
                 omited.released = omited.released.$text;
                 let rDate = omited.released;
                 if(omited.released.length > 4) {
+                    omited.released =  omited.released.replace("00", "01");
                     const splitD = rDate.split("-");
                     rDate = splitD[0];
-                    omited.releasedDate = omited.released;
+                    //omited.releasedDate = omited.released;
                 } else {
-                    omited.releasedDate = `${rDate}-02-01`;
+                    //omited.releasedDate = `${rDate}-02-01`;
                 }
                 omited.releasedDecade = `${rDate[0]}${rDate[1]}${rDate[2]}0`;
             } catch (error) {
@@ -327,39 +307,39 @@ const parseXML = (filePath)=> {
             }
 
             
-            const replacedNullObject = deepReplaceInObject(null, false, omited);
-            const replacedEmptyString = deepReplaceInObject("", false, replacedNullObject);
+            const replacedNullObject = deepReplaceInObject(null, "", omited);
+            const replacedEmptyString = replacedNullObject;//deepReplaceInObject("", false, replacedNullObject);
 
-
-            saveToDb(replacedEmptyString).then(()=>{
-                xml.resume();
-                ////////////////////////////////////////////////
-                hasRelease = false;
-                if(parseEnded) {
-                    clearTimeout(tokenToResolve);
-                    tokenToResolve = setTimeout(() => {
-                        resolve();
-                    }, 10000);
-                }
-                ////////////////////////////////////////////////
-            });
-
-            /*fse.writeJson(`./data/JSON/getJson_${replacedEmptyString.id}.json`, replacedEmptyString, {spaces: 4},
+            fse.writeJson(
+                `./data/JSON/getJson_${process.pid}_${iterator}.json`,
+                { "index" : { "_index": "releases", "_type" : "_doc", "_id" : replacedEmptyString.id } },
+                {flag: 'a'},
                 err => {
-                    if (err) return console.error(err)
-                
-                    xml.resume();
-                    
-                    ////////////////////////////////////////////////
-                    hasRelease = false;
-                    if(parseEnded) {
-                        clearTimeout(tokenToResolve);
-                        tokenToResolve = setTimeout(() => {
-                            resolve();
-                        }, 10000);
+                    if (err) {
+                        console.error(err);
+                        resolve();
                     }
-                    ////////////////////////////////////////////////
-            });*/
+                
+                    fse.writeJson(`./data/JSON/getJson_${process.pid}_${iterator}.json`, replacedEmptyString, {flag: 'a'},
+                        err => {
+                            if (err) {
+                                console.error(err);
+                                resolve();
+                            }
+                        
+                            xml.resume();
+                            
+                            ////////////////////////////////////////////////
+                            hasRelease = false;
+                            if(parseEnded) {
+                                clearTimeout(tokenToResolve);
+                                tokenToResolve = setTimeout(() => {
+                                    resolve();
+                                }, 10000);
+                            }
+                            ////////////////////////////////////////////////
+                    });
+            });
 
 
         });
@@ -373,7 +353,7 @@ const parseXML = (filePath)=> {
 const processing = async ()=> {
     if (cluster.isMaster) {
         const files = await scanDir("./data/XML");
-        console.log(files);
+        //console.log(files);
         const nbFilesPerProcess = Math.floor(files.length / numCPUs);
         const odd = files.length % numCPUs;
         const filesPerProcess = [];
@@ -413,17 +393,26 @@ const processing = async ()=> {
             const filesToParse = message.data;
 
             console.log('Worker ' + process.pid);
-            console.log(filesToParse);
+            //console.log(filesToParse);
 
             const promises = [];
             for (let i = 0; i < filesToParse.length; i++) {
                 const file = filesToParse[i];
-                promises.push(parseXML(`./data/XML/${file}`));
+                promises.push(parseXML(`./data/XML/${file}`, i));
             }
             Promise.all(promises).then(
                 ()=>{
+                    const url = "https://search-discdomain-eaqcaxztcyh7sfehmsbu5oakvm.us-west-1.es.amazonaws.com";
+                    const cmdOptions = { encoding: 'utf8' };
+                    for (let i = 0; i < filesToParse.length; i++) {
+                        const file = `./data/JSON/getJson_${process.pid}_${i}.json`;
+                        const cmd = `curl -XPOST ${url}/_bulk?filter_path=-items --data-binary @${file} -H 'Content-Type: application/json'`
+                        console.log(execSync(cmd, cmdOptions));
+                    }
+
                     console.log('Worker ' + process.pid + ' terminated');
                     process.exit(0);
+
                 }
             );
         
@@ -432,3 +421,4 @@ const processing = async ()=> {
 };
 
 processing();
+
