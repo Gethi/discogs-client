@@ -20,11 +20,4 @@ yarn install
 
 clear
 
-gzip -d data/XML/discogs_20190901_releases-exc.xml.gz
-cd tools
-./xml_split -s1Mb ../data/XML/discogs_20190901_releases-exc.xml
-cd ..
-
-node index.js
-
-ls -l data/JSON
+./run.sh

@@ -11,6 +11,8 @@ D_TMP=/tmp/discogs.urls
 D_PATTERN="discogs_[0-9]{8}_releases.xml.gz"
 D_TAIL="1"
 
+D_RELEASE=""
+
 TEST=""
 [[ "$1" == '--test' ]] && TEST='--spider -S'
 
@@ -18,12 +20,14 @@ echo "" > $D_TMP
 
 for f in $(wget -c --user-agent="$USER_AGENT" --header="$ACCEPT" \
          -qO- $D_URL_LIST | grep -Eio "$D_PATTERN" | sort | uniq | tail -n "$D_TAIL") ; do
-        echo $D_URL_DIR$f >> $D_TMP
+        echo $D_URL_DIR$f >> $D_TMP ; export D_RELEASE=$D_URL_DIR$f
 done
+
+echo "$D_RELEASE"
 
 if ! type "aria2c" > /dev/null; then
         wget -c --user-agent="$USER_AGENT" --header="$ACCEPT" --no-clobber \
-        --input-file=$D_TMP $TEST --show-progress --progress=bar
+        --input-file=$D_TMP $TEST --show-progress --progress=bar -P data/XML/
 else
         IFS='
         '
@@ -32,3 +36,12 @@ else
                 aria2c -c "$f"
         done
 fi
+
+gzip -d data/XML/"$D_RELEASE"
+#cd tools
+#./xml_split -s1Mb ../data/XML/discogs_20190901_releases-exc.xml
+#cd ..
+
+#node index.js
+
+#ls -l data/JSON
