@@ -6,7 +6,10 @@ ACCEPT="Accept-Encoding: gzip, deflate"
 D_URL_LIST="http://discogs-data.s3-us-west-2.amazonaws.com/?delimiter=/&prefix=data/"$(date +"%Y")"/"
 D_URL_DIR="http://discogs-data.s3-us-west-2.amazonaws.com/data/"$(date +"%Y")"/"
 D_TMP=/tmp/discogs.urls
-D_PATTERN="discogs_[0-9]{8}_(artists|labels|masters|releases).xml.gz"
+
+#D_PATTERN="discogs_[0-9]{8}_(artists|labels|masters|releases).xml.gz"
+D_PATTERN="discogs_[0-9]{8}_releases.xml.gz"
+D_TAIL="1"
 
 TEST=""
 [[ "$1" == '--test' ]] && TEST='--spider -S'
@@ -14,7 +17,7 @@ TEST=""
 echo "" > $D_TMP
 
 for f in $(wget -c --user-agent="$USER_AGENT" --header="$ACCEPT" \
-         -qO- $D_URL_LIST | grep -Eio "$D_PATTERN" | sort | uniq | tail -n 4) ; do
+         -qO- $D_URL_LIST | grep -Eio "$D_PATTERN" | sort | uniq | tail -n "$D_TAIL") ; do
         echo $D_URL_DIR$f >> $D_TMP
 done
 
@@ -29,6 +32,3 @@ else
                 aria2c -c "$f"
         done
 fi
-
-#gunzip discogs_20190901_releases.xml.gz
-#./xml_split -s200Mb out/discogs_20190901_releases.xml
