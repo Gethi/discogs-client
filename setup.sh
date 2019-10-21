@@ -13,9 +13,6 @@ git clone -b feature/refactor https://github.com/Gethi/discogs-client.git tmp
 mv tmp/* tmp/.git* .
 rm -rf tmp
 
-##tmp
-mv /discogs_20190901_releases-exc.xml.gz /scratch/data/XML/
-
 yarn install
 
 clear

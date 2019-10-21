@@ -20,10 +20,12 @@ echo "" > $D_TMP
 
 for f in $(wget -c --user-agent="$USER_AGENT" --header="$ACCEPT" \
          -qO- $D_URL_LIST | grep -Eio "$D_PATTERN" | sort | uniq | tail -n "$D_TAIL") ; do
-        echo $D_URL_DIR$f >> $D_TMP ; export D_RELEASE=$D_URL_DIR$f
+        echo $D_URL_DIR$f >> $D_TMP ; export D_RELEASE=$f
 done
 
-echo "$D_RELEASE"
+IFS='.' read -r -a fileArray <<< "$D_RELEASE"
+FILE_NAME="${fileArray[0]}.xml"
+echo "$FILE_NAME"
 
 if ! type "aria2c" > /dev/null; then
         wget -c --user-agent="$USER_AGENT" --header="$ACCEPT" --no-clobber \
@@ -38,10 +40,8 @@ else
 fi
 
 gzip -d data/XML/"$D_RELEASE"
-#cd tools
-#./xml_split -s1Mb ../data/XML/discogs_20190901_releases-exc.xml
-#cd ..
+cd tools
+./xml_split -s200Mb ../data/XML/"$FILE_NAME"
+cd ..
 
 #node index.js
-
-#ls -l data/JSON
