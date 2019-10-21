@@ -29,7 +29,7 @@ FILE_NAME="${fileArray[0]}.xml"
 echo "$URL_RELEASES"
 echo "$FILE_NAME"
 
-wget -P data/XML/ "$URL_RELEASES"
+wget --progress=bar -P data/XML/ "$URL_RELEASES"
 #wget --user-agent="$USER_AGENT" --header="$ACCEPT"  -c --no-clobber --show-progress --progress=bar -P data/XML/ "$URL_RELEASES"
 
 #if ! type "aria2c" > /dev/null; then
@@ -45,7 +45,10 @@ wget -P data/XML/ "$URL_RELEASES"
 #fi
 
 gzip -d data/XML/"$D_RELEASE"
+echo "Gzip success"
+ls -l data/XML/
 cd tools
+echo "Start splitting"
 ./xml_split -s200Mb ../data/XML/"$FILE_NAME"
 cd ..
 

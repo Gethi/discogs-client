@@ -15,6 +15,4 @@ rm -rf tmp
 
 yarn install
 
-clear
-
 ./run.sh
