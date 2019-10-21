@@ -1,7 +1,7 @@
 #!/bin/bash
 #set -xv
 
-yum -y install gcc-c++ make git
+yum -y install gcc-c++ make git wget
 curl -sL https://rpm.nodesource.com/setup_10.x | bash -
 yum -y install nodejs
 curl -sL https://dl.yarnpkg.com/rpm/yarn.repo | tee /etc/yum.repos.d/yarn.repo
