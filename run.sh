@@ -28,8 +28,7 @@ FILE_NAME="${fileArray[0]}.xml"
 echo "$FILE_NAME"
 
 if ! type "aria2c" > /dev/null; then
-        wget -c --user-agent="$USER_AGENT" --header="$ACCEPT" --no-clobber \
-        --input-file=$D_TMP $TEST --show-progress --progress=bar -P data/XML/
+        wget -c --user-agent="$USER_AGENT" --header="$ACCEPT" --no-clobber --input-file=$D_TMP $TEST --show-progress --progress=bar -P data/XML/
 else
         IFS='
         '
