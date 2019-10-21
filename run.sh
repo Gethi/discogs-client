@@ -12,6 +12,7 @@ D_PATTERN="discogs_[0-9]{8}_releases.xml.gz"
 D_TAIL="1"
 
 D_RELEASE=""
+URL_RELEASES=""
 
 TEST=""
 [[ "$1" == '--test' ]] && TEST='--spider -S'
@@ -20,26 +21,27 @@ echo "" > $D_TMP
 
 for f in $(wget -c --user-agent="$USER_AGENT" --header="$ACCEPT" \
          -qO- $D_URL_LIST | grep -Eio "$D_PATTERN" | sort | uniq | tail -n "$D_TAIL") ; do
-        echo $D_URL_DIR$f >> $D_TMP ; export D_RELEASE=$f
+        echo $D_URL_DIR$f >> $D_TMP ; export D_RELEASE=$f ; URL_RELEASES=$D_URL_DIR$f
 done
 
 IFS='.' read -r -a fileArray <<< "$D_RELEASE"
 FILE_NAME="${fileArray[0]}.xml"
+echo "$URL_RELEASES"
 echo "$FILE_NAME"
 
-wget -V
+wget -c --user-agent="$USER_AGENT" --header="$ACCEPT" --no-clobber --show-progress --progress=bar -P data/XML/ $URL_RELEASES
 
-if ! type "aria2c" > /dev/null; then
-        wget -c --user-agent="$USER_AGENT" --header="$ACCEPT" --no-clobber \
-        --input-file=$D_TMP $TEST --show-progress --progress=bar -P data/XML/
-else
-        IFS='
-        '
-        
-        for f in $(cat $D_TMP); do
-                aria2c -c "$f" -d data/XML/
-        done
-fi
+#if ! type "aria2c" > /dev/null; then
+#        wget -c --user-agent="$USER_AGENT" --header="$ACCEPT" --no-clobber \
+#        --input-file=$D_TMP $TEST --show-progress --progress=bar -P data/XML/
+#else
+#        IFS='
+#        '
+#        
+#        for f in $(cat $D_TMP); do
+#                aria2c -c "$f" -d data/XML/
+#        done
+#fi
 
 gzip -d data/XML/"$D_RELEASE"
 cd tools
