@@ -35,7 +35,7 @@ else
         '
         
         for f in $(cat $D_TMP); do
-                aria2c -c "$f"
+                aria2c -c "$f" -d data/XML/
         done
 fi
 
