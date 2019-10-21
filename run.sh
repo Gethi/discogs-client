@@ -29,6 +29,8 @@ FILE_NAME="${fileArray[0]}.xml"
 echo "$URL_RELEASES"
 echo "$FILE_NAME"
 
+wget --help
+
 wget -c --user-agent="$USER_AGENT" --header="$ACCEPT" --no-clobber --show-progress --progress=bar -P data/XML/ $URL_RELEASES
 
 #if ! type "aria2c" > /dev/null; then
