@@ -402,7 +402,7 @@ const processing = async ()=> {
             }
             Promise.all(promises).then(
                 ()=>{
-                    const url = "https://search-discdomain-eaqcaxztcyh7sfehmsbu5oakvm.us-west-1.es.amazonaws.com";
+                    const url = "https://search-discogsdomain-4gnowlqpi3c3eevtevhz4f6noy.us-west-1.es.amazonaws.com";
                     const cmdOptions = { encoding: 'utf8' };
                     for (let i = 0; i < filesToParse.length; i++) {
                         const file = `./data/JSON/getJson_${process.pid}_${i}.json`;
