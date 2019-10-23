@@ -13,7 +13,7 @@ const { exec,execSync } = require('child_process');
 // Set the region 
 //AWS.config.update({region: 'us-west-1'});
 
-var numCPUs = 4; // IMPORTANT
+var numCPUs = 12; // IMPORTANT
 
 const formatArrayByAttribute = (unformat, attributeName)=> {
     if(unformat.length === 0) return unformat;
