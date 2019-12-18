@@ -49,7 +49,7 @@ echo "Gzip success"
 ls -l data/XML/
 cd tools
 echo "Start splitting"
-./xml_split -s150Mb ../data/XML/"$FILE_NAME"
+./xml_split -s10Mb ../data/XML/"$FILE_NAME"
 cd ..
 
 node index.js
